@@ -46,3 +46,23 @@ app.*.map.json
 
 # Key secrets
 /android/key.properties
+
+# Local environment files (API keys, secrets)
+.env*
+*.env
+
+# Windows-specific files
+Thumbs.db
+
+# macOS-specific files
+.DS_Store
+
+# Temporary files created by packages or build tools
+.temp/
+.pub-cache/
+.pub/
+node_modules/
+package-lock.json
+
+# If you prefer to ignore the lock file (Optional, but recommended for simple apps)
+# pubspec.lock

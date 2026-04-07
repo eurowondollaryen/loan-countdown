@@ -5,7 +5,8 @@ class MonthlyDataPoint {
   final int month;
   final double savingsPot;
   final double monthlySavings;
-  final double cumulativeSavings; // New field: Pot balance before early repayment
+  final double
+      cumulativeSavings; // New field: Pot balance before early repayment
   final double remainingPrincipal;
   final double totalPayment;
   final double principalPaid;
@@ -35,7 +36,7 @@ class CalculationResult {
   final double totalInterestSaved;
 
   CalculationResult({
-    required this.totalMonths, 
+    required this.totalMonths,
     required this.schedule,
     required this.earlyRepaymentCount,
     required this.totalInterestPaid,
@@ -43,8 +44,16 @@ class CalculationResult {
   });
 }
 
-
-enum RepaymentStatus { high, medium, low }
+enum RepaymentStatus {
+  level1, // 0-12 months (1 year)
+  level2, // 13-48 months (1-4 years) -> User said 3 years units, let's adjust:
+  level3, // 49-84 months (4-7 years)
+  level4, // 85-120 months (7-10 years)
+  level5, // 121-156 months (10-13 years)
+  level6, // 157-192 months (13-16 years)
+  level7, // 193-228 months (16-19 years)
+  level8, // 229+ months (19+ years)
+}
 
 enum LoanRepaymentType {
   equalTotal, // 원리금균등
@@ -57,7 +66,7 @@ class LoanCalculator {
   final double intermediateThreshold;
   final double annualInterestRate;
   final LoanRepaymentType loanRepaymentType;
-  
+
   final double initialRemainingPrincipal;
   final int initialRemainingTerm;
 
@@ -69,15 +78,15 @@ class LoanCalculator {
     required this.loanRepaymentType,
     required double remainingPrincipal,
     required int remainingLoanTermInMonths,
-  }) : initialRemainingPrincipal = remainingPrincipal,
-       initialRemainingTerm = remainingLoanTermInMonths;
+  })  : initialRemainingPrincipal = remainingPrincipal,
+        initialRemainingTerm = remainingLoanTermInMonths;
 
   /// 대출 상환 스케줄과 총 개월 수를 계산합니다.
   CalculationResult generateRepaymentSchedule() {
     if (initialRemainingPrincipal <= 0) {
       return CalculationResult(
-        totalMonths: 0, 
-        schedule: [], 
+        totalMonths: 0,
+        schedule: [],
         earlyRepaymentCount: 0,
         totalInterestPaid: 0,
         totalInterestSaved: 0,
@@ -85,7 +94,8 @@ class LoanCalculator {
     }
 
     // 1. 기준 이자 계산 (중도상환 없을 때)
-    double baselineInterest = _calculateTotalInterest(initialRemainingPrincipal, initialRemainingTerm);
+    double baselineInterest = _calculateTotalInterest(
+        initialRemainingPrincipal, initialRemainingTerm);
 
     // 2. 시뮬레이션
     List<MonthlyDataPoint> schedule = [];
@@ -97,9 +107,11 @@ class LoanCalculator {
     int earlyRepaymentCount = 0;
     double totalInterestPaid = 0;
 
-    double fixedPrincipalPayment = (loanRepaymentType == LoanRepaymentType.equalPrincipal && remainingLoanTermInMonths > 0)
-        ? remainingPrincipal / remainingLoanTermInMonths
-        : 0;
+    double fixedPrincipalPayment =
+        (loanRepaymentType == LoanRepaymentType.equalPrincipal &&
+                remainingLoanTermInMonths > 0)
+            ? remainingPrincipal / remainingLoanTermInMonths
+            : 0;
 
     while (remainingPrincipal > 0) {
       monthsElapsed++;
@@ -111,20 +123,23 @@ class LoanCalculator {
         fixedPrincipalPayment: fixedPrincipalPayment,
         type: loanRepaymentType,
       );
-      
+
       double interestForMonth = remainingPrincipal * monthlyInterestRate;
       double principalForMonth = monthlyLoanPayment - interestForMonth;
 
       if (principalForMonth < 0) principalForMonth = 0;
       totalInterestPaid += interestForMonth;
-      
+
       double earlyPaymentForMonth = 0;
-      double monthlySavings = monthlyIncome - monthlyExpenses - monthlyLoanPayment;
+      double monthlySavings =
+          monthlyIncome - monthlyExpenses - monthlyLoanPayment;
       savingsPot += monthlySavings;
 
       double cumulativeSavingsBeforeRepayment = savingsPot;
 
-      if (savingsPot >= intermediateThreshold && intermediateThreshold > 0 && remainingPrincipal > 0) {
+      if (savingsPot >= intermediateThreshold &&
+          intermediateThreshold > 0 &&
+          remainingPrincipal > 0) {
         double earlyPayment = intermediateThreshold;
         if (earlyPayment > remainingPrincipal) {
           earlyPayment = remainingPrincipal;
@@ -134,8 +149,10 @@ class LoanCalculator {
         savingsPot -= earlyPayment;
         earlyRepaymentCount++;
 
-        if (loanRepaymentType == LoanRepaymentType.equalPrincipal && remainingLoanTermInMonths > 0) {
-            fixedPrincipalPayment = remainingPrincipal / remainingLoanTermInMonths;
+        if (loanRepaymentType == LoanRepaymentType.equalPrincipal &&
+            remainingLoanTermInMonths > 0) {
+          fixedPrincipalPayment =
+              remainingPrincipal / remainingLoanTermInMonths;
         }
       } else if (savingsPot >= remainingPrincipal && remainingPrincipal > 0) {
         double earlyPayment = remainingPrincipal;
@@ -169,7 +186,7 @@ class LoanCalculator {
 
       if (monthsElapsed > 1200) {
         return CalculationResult(
-          totalMonths: -1, 
+          totalMonths: -1,
           schedule: [],
           earlyRepaymentCount: 0,
           totalInterestPaid: 0,
@@ -179,11 +196,12 @@ class LoanCalculator {
     }
 
     return CalculationResult(
-      totalMonths: monthsElapsed, 
+      totalMonths: monthsElapsed,
       schedule: schedule,
       earlyRepaymentCount: earlyRepaymentCount,
       totalInterestPaid: totalInterestPaid,
-      totalInterestSaved: (baselineInterest - totalInterestPaid).clamp(0, double.infinity),
+      totalInterestSaved:
+          (baselineInterest - totalInterestPaid).clamp(0, double.infinity),
     );
   }
 
@@ -192,12 +210,15 @@ class LoanCalculator {
     double totalInterest = 0;
     double tempPrincipal = principal;
     double monthlyRate = annualInterestRate / 12;
-    double fixedPrincipal = (loanRepaymentType == LoanRepaymentType.equalPrincipal) ? principal / terms : 0;
+    double fixedPrincipal =
+        (loanRepaymentType == LoanRepaymentType.equalPrincipal)
+            ? principal / terms
+            : 0;
 
     for (int i = 0; i < terms; i++) {
       double interest = tempPrincipal * monthlyRate;
       totalInterest += interest;
-      
+
       double monthlyPayment = _calculateMonthlyLoanPayment(
         principal: tempPrincipal,
         monthlyRate: monthlyRate,
@@ -205,7 +226,7 @@ class LoanCalculator {
         fixedPrincipalPayment: fixedPrincipal,
         type: loanRepaymentType,
       );
-      
+
       double principalPaid = monthlyPayment - interest;
       tempPrincipal -= principalPaid;
       if (tempPrincipal <= 0) break;
@@ -233,9 +254,13 @@ class LoanCalculator {
   }
 
   RepaymentStatus getStatus(int months) {
-    if (months < 0) return RepaymentStatus.high;
-    if (months < 12) return RepaymentStatus.low;
-    if (months <= 36) return RepaymentStatus.medium;
-    return RepaymentStatus.high;
+    if (months <= 12) return RepaymentStatus.level1;
+    if (months <= 48) return RepaymentStatus.level2;
+    if (months <= 84) return RepaymentStatus.level3;
+    if (months <= 120) return RepaymentStatus.level4;
+    if (months <= 156) return RepaymentStatus.level5;
+    if (months <= 192) return RepaymentStatus.level6;
+    if (months <= 228) return RepaymentStatus.level7;
+    return RepaymentStatus.level8;
   }
 }
